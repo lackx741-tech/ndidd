@@ -11,6 +11,6 @@
     "lint": "solhint 'src/**/*.sol'",
     "clean": "forge clean",
     "deploy:local": "forge script script/Deploy.s.sol --rpc-url localhost --broadcast",
-    "generate-types": "typechain --target ethers-v6 --out-dir typechain-types 'out/**/*.json'"
+    "generate-types": "typechain --target ethers-v6 --out-dir typechain-types 'out/**/*.sol/*.json'"
   }
 }

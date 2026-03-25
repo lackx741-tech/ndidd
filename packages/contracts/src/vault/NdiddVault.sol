@@ -148,9 +148,9 @@ contract NdiddVault is
 
         uint256 before = strategy.totalAssets();
         uint256 harvested = strategy.harvest();
-        uint256 after_ = strategy.totalAssets();
+        uint256 assetsAfter = strategy.totalAssets();
 
-        uint256 profit = after_ > before ? after_ - before : 0;
+        uint256 profit = assetsAfter > before ? assetsAfter - before : 0;
         if (profit == 0 && harvested == 0) {
             lastHarvest = block.timestamp;
             return;

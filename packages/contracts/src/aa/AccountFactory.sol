@@ -12,6 +12,7 @@ interface IEntryPoint {
     function handleOps(UserOperation[] calldata ops, address payable beneficiary) external;
     function getNonce(address sender, uint192 key) external view returns (uint256);
     function depositTo(address account) external payable;
+    function balanceOf(address account) external view returns (uint256);
 }
 
 /// @notice ERC-4337 UserOperation struct.
@@ -114,9 +115,9 @@ contract SmartAccount {
         return ("", SIG_VALIDATION_SUCCESS);
     }
 
-    /// @notice Returns the entry point deposit balance.
+    /// @notice Returns the account's prefund balance deposited at the EntryPoint.
     function getDeposit() external view returns (uint256) {
-        return entryPoint.getNonce(address(this), 0);
+        return entryPoint.balanceOf(address(this));
     }
 
     /// @notice Transfers ownership to a new address.
