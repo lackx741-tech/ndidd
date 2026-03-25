@@ -10,6 +10,8 @@ export const ACCOUNT_FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_ACCOUNT_FACTORY_
   '0x0000000000000000000000000000000000000000') as `0x${string}`;
 export const PAYMASTER_ADDRESS = (process.env.NEXT_PUBLIC_PAYMASTER_ADDRESS ??
   '0x0000000000000000000000000000000000000000') as `0x${string}`;
+export const EIP712_SIGNER_ADDRESS = (process.env.NEXT_PUBLIC_EIP712_SIGNER_ADDRESS ??
+  '0x0000000000000000000000000000000000000000') as `0x${string}`;
 
 export const NDIDDTOKEN_ABI = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
@@ -18,6 +20,16 @@ export const NDIDDTOKEN_ABI = [
   { name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }] },
   { name: 'allowance', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }], outputs: [{ type: 'uint256' }] },
   { name: 'Transfer', type: 'event', inputs: [{ name: 'from', type: 'address', indexed: true }, { name: 'to', type: 'address', indexed: true }, { name: 'value', type: 'uint256', indexed: false }] },
+  // ERC20Votes / delegation
+  { name: 'delegate', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'delegatee', type: 'address' }], outputs: [] },
+  { name: 'delegates', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'address' }] },
+  { name: 'getVotes', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { name: 'delegateBySig', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'delegatee', type: 'address' }, { name: 'nonce', type: 'uint256' }, { name: 'expiry', type: 'uint256' }, { name: 'v', type: 'uint8' }, { name: 'r', type: 'bytes32' }, { name: 's', type: 'bytes32' }], outputs: [] },
+  { name: 'delegateBatch', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'sigs', type: 'tuple[]', components: [{ name: 'delegatee', type: 'address' }, { name: 'nonce', type: 'uint256' }, { name: 'expiry', type: 'uint256' }, { name: 'v', type: 'uint8' }, { name: 'r', type: 'bytes32' }, { name: 's', type: 'bytes32' }] }], outputs: [] },
+  { name: 'nonces', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { name: 'DOMAIN_SEPARATOR', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'bytes32' }] },
+  { name: 'DelegateChanged', type: 'event', inputs: [{ name: 'delegator', type: 'address', indexed: true }, { name: 'fromDelegate', type: 'address', indexed: true }, { name: 'toDelegate', type: 'address', indexed: true }] },
+  { name: 'DelegateVotesChanged', type: 'event', inputs: [{ name: 'delegate', type: 'address', indexed: true }, { name: 'previousVotes', type: 'uint256', indexed: false }, { name: 'newVotes', type: 'uint256', indexed: false }] },
 ] as const;
 
 export const NDIDDNFT_ABI = [

@@ -217,3 +217,27 @@ export function useSmartAccount(salt = 0n) {
     paymasterPaused: paused.data as boolean | undefined,
   };
 }
+
+// ── Batch execute ──────────────────────────────────────────────────────────
+
+/**
+ * Executes multiple calls atomically from the SmartAccount in a single tx.
+ */
+export function useSmartWalletBatchExecute(smartWalletAddress?: Address) {
+  const { writeContract, isPending, isSuccess, error } = useWriteContract();
+
+  const executeBatch = useCallback(
+    (dest: Address[], data: Hex[]) => {
+      if (!smartWalletAddress) return;
+      writeContract({
+        address: smartWalletAddress,
+        abi: SMART_ACCOUNT_ABI,
+        functionName: 'executeBatch',
+        args: [dest, data],
+      });
+    },
+    [smartWalletAddress, writeContract],
+  );
+
+  return { executeBatch, isPending, isSuccess, error };
+}

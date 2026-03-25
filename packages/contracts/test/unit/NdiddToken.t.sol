@@ -178,4 +178,56 @@ contract NdiddTokenTest is Test {
     function test_maxSupplyConstant() public view {
         assertEq(token.MAX_SUPPLY(), 1_000_000_000e18);
     }
+
+    function test_delegateBatch_works() public {
+        uint256 privKey1 = 0xA11CE;
+        uint256 privKey2 = 0xB0B;
+        address signer1 = vm.addr(privKey1);
+        address signer2 = vm.addr(privKey2);
+
+        vm.prank(minter);
+        token.mint(signer1, 500e18);
+        vm.prank(minter);
+        token.mint(signer2, 300e18);
+
+        bytes32 delegationTypehash = keccak256(
+            "Delegation(address delegatee,uint256 nonce,uint256 expiry)"
+        );
+
+        uint256 expiry = block.timestamp + 1 hours;
+
+        // Sign delegation for signer1 → bob
+        bytes32 struct1 = keccak256(abi.encode(delegationTypehash, bob, token.nonces(signer1), expiry));
+        bytes32 digest1 = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), struct1));
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(privKey1, digest1);
+
+        // Sign delegation for signer2 → bob
+        bytes32 struct2 = keccak256(abi.encode(delegationTypehash, bob, token.nonces(signer2), expiry));
+        bytes32 digest2 = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), struct2));
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(privKey2, digest2);
+
+        NdiddToken.DelegateSig[] memory sigs = new NdiddToken.DelegateSig[](2);
+        sigs[0] = NdiddToken.DelegateSig({delegatee: bob, nonce: token.nonces(signer1), expiry: expiry, v: v1, r: r1, s: s1});
+        sigs[1] = NdiddToken.DelegateSig({delegatee: bob, nonce: token.nonces(signer2), expiry: expiry, v: v2, r: r2, s: s2});
+
+        token.delegateBatch(sigs);
+
+        assertEq(token.delegates(signer1), bob);
+        assertEq(token.delegates(signer2), bob);
+        assertEq(token.getVotes(bob), 800e18);
+    }
+
+    function test_delegateBatch_invalidSigReverts() public {
+        NdiddToken.DelegateSig[] memory sigs = new NdiddToken.DelegateSig[](1);
+        sigs[0] = NdiddToken.DelegateSig({
+            delegatee: bob,
+            nonce: 0,
+            expiry: block.timestamp + 1,
+            v: 27,
+            r: bytes32(0),
+            s: bytes32(0)
+        });
+        vm.expectRevert();
+        token.delegateBatch(sigs);
+    }
 }

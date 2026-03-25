@@ -40,3 +40,45 @@ export function useTokenApprove() {
     });
   return { approve, isPending, isSuccess, error };
 }
+
+export function useDelegates(address?: `0x${string}`) {
+  return useReadContract({
+    address: TOKEN_ADDRESS,
+    abi: NDIDDTOKEN_ABI,
+    functionName: 'delegates',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+}
+
+export function useVotingPower(address?: `0x${string}`) {
+  return useReadContract({
+    address: TOKEN_ADDRESS,
+    abi: NDIDDTOKEN_ABI,
+    functionName: 'getVotes',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+}
+
+export function useTokenNonce(address?: `0x${string}`) {
+  return useReadContract({
+    address: TOKEN_ADDRESS,
+    abi: NDIDDTOKEN_ABI,
+    functionName: 'nonces',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+}
+
+export function useDelegate() {
+  const { writeContract, isPending, isSuccess, error } = useWriteContract();
+  const delegate = (delegatee: `0x${string}`) =>
+    writeContract({
+      address: TOKEN_ADDRESS,
+      abi: NDIDDTOKEN_ABI,
+      functionName: 'delegate',
+      args: [delegatee],
+    });
+  return { delegate, isPending, isSuccess, error };
+}

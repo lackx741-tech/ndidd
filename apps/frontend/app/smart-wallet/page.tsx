@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,11 +11,17 @@ import { TransactionButton } from '@/components/web3/TransactionButton';
 import {
   useSmartAccount,
   useSmartWalletExecute,
+  useSmartWalletBatchExecute,
   useTransferSmartWalletOwnership,
   usePaymasterInfo,
 } from '@/hooks/useSmartAccount';
 import { formatAmount } from '@/lib/utils';
 import type { Address, Hex } from 'viem';
+
+interface BatchCall {
+  dest: string;
+  data: string;
+}
 
 export default function SmartWalletPage() {
   const { isConnected } = useAccount();
@@ -34,6 +40,8 @@ export default function SmartWalletPage() {
   const { execute, isPending: execPending, isSuccess: execSuccess } = useSmartWalletExecute(
     isDeployed ? smartWalletAddress : undefined,
   );
+  const { executeBatch, isPending: batchPending, isSuccess: batchSuccess } =
+    useSmartWalletBatchExecute(isDeployed ? smartWalletAddress : undefined);
   const {
     transferOwnership,
     isPending: transferPending,
@@ -41,10 +49,60 @@ export default function SmartWalletPage() {
   } = useTransferSmartWalletOwnership(isDeployed ? smartWalletAddress : undefined);
   const { deposit: paymasterDeposit } = usePaymasterInfo();
 
+  // Single execute state
   const [execDest, setExecDest] = useState('');
   const [execValue, setExecValue] = useState('0');
   const [execData, setExecData] = useState('0x');
   const [newOwner, setNewOwner] = useState('');
+
+  // Batch execute state
+  const [batchCalls, setBatchCalls] = useState<BatchCall[]>([
+    { dest: '', data: '0x' },
+    { dest: '', data: '0x' },
+  ]);
+  const updateBatchCall = useCallback((index: number, field: keyof BatchCall, value: string) => {
+    setBatchCalls((prev) => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
+  }, []);
+  const addBatchCall = useCallback(() => setBatchCalls((prev) => [...prev, { dest: '', data: '0x' }]), []);
+  const removeBatchCall = useCallback(
+    (index: number) => setBatchCalls((prev) => prev.filter((_, i) => i !== index)),
+    [],
+  );
+
+  // UserOp runner state
+  const [bundlerUrl, setBundlerUrl] = useState('');
+  const [userOpJson, setUserOpJson] = useState('');
+  const [entryPointAddr, setEntryPointAddr] = useState('');
+  const [userOpResult, setUserOpResult] = useState<string | null>(null);
+  const [userOpError, setUserOpError] = useState<string | null>(null);
+  const [userOpPending, setUserOpPending] = useState(false);
+
+  const handleSendUserOp = useCallback(async () => {
+    setUserOpResult(null);
+    setUserOpError(null);
+    setUserOpPending(true);
+    try {
+      const userOp = JSON.parse(userOpJson);
+      const body = JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_sendUserOperation',
+        params: [userOp, entryPointAddr],
+      });
+      const res = await fetch(bundlerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+      const json = await res.json() as { result?: string; error?: { message: string } };
+      if (json.error) throw new Error(json.error.message);
+      setUserOpResult(json.result ?? 'ok');
+    } catch (e) {
+      setUserOpError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUserOpPending(false);
+    }
+  }, [bundlerUrl, userOpJson, entryPointAddr]);
 
   if (!isConnected) {
     return (
@@ -146,7 +204,7 @@ export default function SmartWalletPage() {
           </Card>
         )}
 
-        {/* Execute call */}
+        {/* Execute single call */}
         {isDeployed && (
           <Card title="Execute Call">
             <p className="text-zinc-400 text-sm mb-4">
@@ -190,6 +248,61 @@ export default function SmartWalletPage() {
           </Card>
         )}
 
+        {/* Batch execute */}
+        {isDeployed && (
+          <Card title="Batch Execute">
+            <p className="text-zinc-400 text-sm mb-4">
+              Execute multiple calls atomically in a single transaction from your smart wallet.
+            </p>
+            <div className="space-y-4">
+              {batchCalls.map((call, i) => (
+                <div key={i} className="rounded-lg border border-zinc-700 p-3 space-y-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-zinc-400 text-xs font-medium">Call #{i + 1}</span>
+                    {batchCalls.length > 1 && (
+                      <button
+                        onClick={() => removeBatchCall(i)}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    label="Destination"
+                    placeholder="0x..."
+                    value={call.dest}
+                    onChange={(e) => updateBatchCall(i, 'dest', e.target.value)}
+                  />
+                  <Input
+                    label="Calldata (hex)"
+                    placeholder="0x"
+                    value={call.data}
+                    onChange={(e) => updateBatchCall(i, 'data', e.target.value)}
+                  />
+                </div>
+              ))}
+              <Button onClick={addBatchCall} variant="secondary" className="w-full text-sm">
+                + Add Call
+              </Button>
+              <TransactionButton
+                label="Execute Batch"
+                isPending={batchPending}
+                isSuccess={batchSuccess}
+                disabled={batchCalls.every((c) => !c.dest)}
+                onClick={() => {
+                  const validCalls = batchCalls.filter((c) => c.dest);
+                  executeBatch(
+                    validCalls.map((c) => c.dest as Address),
+                    validCalls.map((c) => (c.data || '0x') as Hex),
+                  );
+                }}
+                className="w-full"
+              />
+            </div>
+          </Card>
+        )}
+
         {/* Transfer ownership */}
         {isDeployed && (
           <Card title="Transfer Ownership">
@@ -209,12 +322,59 @@ export default function SmartWalletPage() {
                 isSuccess={transferSuccess}
                 disabled={!newOwner}
                 onClick={() => transferOwnership(newOwner as Address)}
-                variant="danger"
                 className="w-full"
               />
             </div>
           </Card>
         )}
+
+        {/* UserOperation Runner */}
+        <Card title="Run UserOperation">
+          <p className="text-zinc-400 text-sm mb-4">
+            Submit a signed UserOperation directly to an ERC-4337 bundler (e.g. Alchemy, Pimlico).
+          </p>
+          <div className="space-y-3">
+            <Input
+              label="Bundler URL"
+              placeholder="https://api.pimlico.io/v1/..."
+              value={bundlerUrl}
+              onChange={(e) => setBundlerUrl(e.target.value)}
+            />
+            <Input
+              label="EntryPoint Address"
+              placeholder="0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"
+              value={entryPointAddr}
+              onChange={(e) => setEntryPointAddr(e.target.value)}
+            />
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">UserOperation JSON</label>
+              <textarea
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-200 text-xs font-mono p-3 h-36 resize-y focus:outline-none focus:ring-1 focus:ring-purple-500"
+                placeholder='{"sender":"0x...","nonce":"0x0","initCode":"0x",...}'
+                value={userOpJson}
+                onChange={(e) => setUserOpJson(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleSendUserOp}
+              isLoading={userOpPending}
+              disabled={userOpPending || !bundlerUrl || !userOpJson || !entryPointAddr}
+              className="w-full"
+            >
+              Send UserOperation
+            </Button>
+            {userOpResult && (
+              <div className="rounded-lg bg-green-950 border border-green-800 p-3 text-xs text-green-300 break-all">
+                ✓ UserOp Hash: {userOpResult}
+              </div>
+            )}
+            {userOpError && (
+              <div className="rounded-lg bg-red-950 border border-red-800 p-3 text-xs text-red-300 break-all">
+                ✗ Error: {userOpError}
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* ERC-4337 Info */}
         <Card title="How It Works">
@@ -261,3 +421,4 @@ declare global {
     }
   }
 }
+

@@ -175,6 +175,107 @@ export class NdiddTokenClient {
     return formatUnits(balance, decimals)
   }
 
+  // ── Delegation (ERC20Votes) ───────────────────────────────────────────────
+
+  /**
+   * Delegates voting power of the calling account to `delegatee`.
+   */
+  async delegate(delegatee: Address): Promise<Hash> {
+    const wallet = this.requireWalletClient()
+    const [account] = await wallet.getAddresses()
+    if (!account) throw new Error('No account available in WalletClient')
+    return wallet.writeContract({
+      address: this.contractAddress,
+      abi: NdiddTokenABI,
+      functionName: 'delegate',
+      args: [delegatee],
+      account,
+      chain: wallet.chain ?? null,
+    })
+  }
+
+  /** Returns the current delegatee of `account`. */
+  async getDelegates(account: Address): Promise<Address> {
+    return this.publicClient.readContract({
+      address: this.contractAddress,
+      abi: NdiddTokenABI,
+      functionName: 'delegates',
+      args: [account],
+    })
+  }
+
+  /** Returns the current voting power of `account`. */
+  async getVotingPower(account: Address): Promise<bigint> {
+    return this.publicClient.readContract({
+      address: this.contractAddress,
+      abi: NdiddTokenABI,
+      functionName: 'getVotes',
+      args: [account],
+    })
+  }
+
+  /** Returns the voting power of `account` at a past `timepoint` (block number). */
+  async getPastVotingPower(account: Address, timepoint: bigint): Promise<bigint> {
+    return this.publicClient.readContract({
+      address: this.contractAddress,
+      abi: NdiddTokenABI,
+      functionName: 'getPastVotes',
+      args: [account, timepoint],
+    })
+  }
+
+  /**
+   * Delegates voting power via EIP-712 signature (gasless delegation).
+   * The signature is produced off-chain using `signDelegateBySig` from the wallet helpers.
+   */
+  async delegateBySig(
+    delegatee: Address,
+    nonce: bigint,
+    expiry: bigint,
+    v: number,
+    r: `0x${string}`,
+    s: `0x${string}`,
+  ): Promise<Hash> {
+    const wallet = this.requireWalletClient()
+    const [account] = await wallet.getAddresses()
+    if (!account) throw new Error('No account available in WalletClient')
+    return wallet.writeContract({
+      address: this.contractAddress,
+      abi: NdiddTokenABI,
+      functionName: 'delegateBySig',
+      args: [delegatee, nonce, expiry, v, r, s],
+      account,
+      chain: wallet.chain ?? null,
+    })
+  }
+
+  /**
+   * Batch-delegates voting power for multiple accounts in a single on-chain transaction.
+   * Each entry should be the result of a `signDelegateBySig` call.
+   */
+  async delegateBatch(
+    sigs: ReadonlyArray<{
+      delegatee: Address
+      nonce: bigint
+      expiry: bigint
+      v: number
+      r: `0x${string}`
+      s: `0x${string}`
+    }>,
+  ): Promise<Hash> {
+    const wallet = this.requireWalletClient()
+    const [account] = await wallet.getAddresses()
+    if (!account) throw new Error('No account available in WalletClient')
+    return wallet.writeContract({
+      address: this.contractAddress,
+      abi: NdiddTokenABI,
+      functionName: 'delegateBatch',
+      args: [sigs as { delegatee: Address; nonce: bigint; expiry: bigint; v: number; r: `0x${string}`; s: `0x${string}` }[]],
+      account,
+      chain: wallet.chain ?? null,
+    })
+  }
+
   /**
    * Subscribe to Transfer events.
    * Returns an unsubscribe function.

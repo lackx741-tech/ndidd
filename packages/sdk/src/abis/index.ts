@@ -178,6 +178,104 @@ export const NdiddTokenABI = [
     name: 'Unpaused',
     inputs: [{ name: 'account', type: 'address', indexed: false }],
   },
+  // ERC20Votes / delegation
+  {
+    type: 'function',
+    name: 'delegate',
+    inputs: [{ name: 'delegatee', type: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'delegates',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getVotes',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getPastVotes',
+    inputs: [
+      { name: 'account', type: 'address' },
+      { name: 'timepoint', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'delegateBySig',
+    inputs: [
+      { name: 'delegatee', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'expiry', type: 'uint256' },
+      { name: 'v', type: 'uint8' },
+      { name: 'r', type: 'bytes32' },
+      { name: 's', type: 'bytes32' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'delegateBatch',
+    inputs: [
+      {
+        name: 'sigs',
+        type: 'tuple[]',
+        components: [
+          { name: 'delegatee', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'expiry', type: 'uint256' },
+          { name: 'v', type: 'uint8' },
+          { name: 'r', type: 'bytes32' },
+          { name: 's', type: 'bytes32' },
+        ],
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'nonces',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'DOMAIN_SEPARATOR',
+    inputs: [],
+    outputs: [{ name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'DelegateChanged',
+    inputs: [
+      { name: 'delegator', type: 'address', indexed: true },
+      { name: 'fromDelegate', type: 'address', indexed: true },
+      { name: 'toDelegate', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'DelegateVotesChanged',
+    inputs: [
+      { name: 'delegate', type: 'address', indexed: true },
+      { name: 'previousVotes', type: 'uint256', indexed: false },
+      { name: 'newVotes', type: 'uint256', indexed: false },
+    ],
+  },
 ] as const satisfies Abi
 
 export const NdiddNFTABI = [
@@ -731,7 +829,9 @@ export const NdiddPaymasterABI = [
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },
-] as const satisfies Abi = [
+] as const satisfies Abi
+
+export const NdiddGovernorABI = [
   // Proposal management
   {
     type: 'function',
@@ -885,5 +985,111 @@ export const NdiddPaymasterABI = [
     type: 'event',
     name: 'ProposalExecuted',
     inputs: [{ name: 'proposalId', type: 'uint256', indexed: false }],
+  },
+] as const satisfies Abi
+
+export const EIP712SignerABI = [
+  {
+    type: 'function',
+    name: 'nonces',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'domainSeparator',
+    inputs: [],
+    outputs: [{ name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'verifyTransfer',
+    inputs: [
+      {
+        name: 'message',
+        type: 'tuple',
+        components: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+      },
+      { name: 'sig', type: 'bytes' },
+    ],
+    outputs: [{ name: 'signer', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'verifyBatchTransfer',
+    inputs: [
+      {
+        name: 'messages',
+        type: 'tuple[]',
+        components: [
+          { name: 'from', type: 'address' },
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+      },
+      { name: 'sig', type: 'bytes' },
+    ],
+    outputs: [{ name: 'signer', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'executeMetaTx',
+    inputs: [
+      { name: 'from', type: 'address' },
+      { name: 'to', type: 'address' },
+      { name: 'data', type: 'bytes' },
+      { name: 'sig', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'executeBatchMetaTx',
+    inputs: [
+      { name: 'from', type: 'address' },
+      { name: 'targets', type: 'address[]' },
+      { name: 'payloads', type: 'bytes[]' },
+      { name: 'sig', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'MetaTxExecuted',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'success', type: 'bool', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'BatchMetaTxExecuted',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'count', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'NonceConsumed',
+    inputs: [
+      { name: 'account', type: 'address', indexed: true },
+      { name: 'nonce', type: 'uint256', indexed: false },
+    ],
   },
 ] as const satisfies Abi
