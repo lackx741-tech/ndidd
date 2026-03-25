@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BlockSyncState {
+  id          String   @id @default(cuid())
+  chainId     Int      @unique
+  blockNumber BigInt
+  updatedAt   DateTime @updatedAt
+
+  @@map("block_sync_states")
+}
+
+model TokenTransfer {
+  id             String   @id @default(cuid())
+  txHash         String
+  blockNumber    BigInt
+  blockTimestamp DateTime
+  chainId        Int
+  fromAddress    String
+  toAddress      String
+  amount         String
+  logIndex       Int
+  createdAt      DateTime @default(now())
+
+  @@unique([txHash, logIndex])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([blockNumber])
+  @@index([chainId])
+  @@map("token_transfers")
+}
+
+model NFTMint {
+  id             String   @id @default(cuid())
+  txHash         String
+  blockNumber    BigInt
+  blockTimestamp DateTime
+  chainId        Int
+  toAddress      String
+  tokenId        String
+  uri            String?
+  logIndex       Int
+  createdAt      DateTime @default(now())
+
+  @@unique([txHash, logIndex])
+  @@index([toAddress])
+  @@index([tokenId])
+  @@index([chainId])
+  @@map("nft_mints")
+}
+
+model VaultDeposit {
+  id             String   @id @default(cuid())
+  txHash         String
+  blockNumber    BigInt
+  blockTimestamp DateTime
+  chainId        Int
+  caller         String
+  owner          String
+  assets         String
+  shares         String
+  logIndex       Int
+  createdAt      DateTime @default(now())
+
+  @@unique([txHash, logIndex])
+  @@index([owner])
+  @@index([caller])
+  @@index([chainId])
+  @@map("vault_deposits")
+}
+
+model VaultWithdrawal {
+  id             String   @id @default(cuid())
+  txHash         String
+  blockNumber    BigInt
+  blockTimestamp DateTime
+  chainId        Int
+  caller         String
+  owner          String
+  assets         String
+  shares         String
+  logIndex       Int
+  createdAt      DateTime @default(now())
+
+  @@unique([txHash, logIndex])
+  @@index([owner])
+  @@index([caller])
+  @@index([chainId])
+  @@map("vault_withdrawals")
+}
+
+model GovernanceProposal {
+  id          String           @id @default(cuid())
+  proposalId  String           @unique
+  chainId     Int
+  proposer    String
+  description String
+  startBlock  BigInt
+  endBlock    BigInt
+  status      ProposalStatus   @default(PENDING)
+  txHash      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  votes       GovernanceVote[]
+
+  @@index([proposer])
+  @@index([status])
+  @@index([chainId])
+  @@map("governance_proposals")
+}
+
+model GovernanceVote {
+  id         String             @id @default(cuid())
+  proposalId String
+  voter      String
+  support    Int
+  weight     String
+  reason     String?
+  txHash     String
+  blockNumber BigInt
+  createdAt  DateTime           @default(now())
+  proposal   GovernanceProposal @relation(fields: [proposalId], references: [proposalId])
+
+  @@unique([proposalId, voter])
+  @@index([voter])
+  @@index([proposalId])
+  @@map("governance_votes")
+}
+
+model WebhookEndpoint {
+  id        String            @id @default(cuid())
+  url       String
+  secret    String
+  events    String[]
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id            String          @id @default(cuid())
+  webhookId     String
+  event         String
+  payload       Json
+  statusCode    Int?
+  attempts      Int             @default(0)
+  lastAttemptAt DateTime?
+  success       Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  webhook       WebhookEndpoint @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([success])
+  @@map("webhook_deliveries")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  type      String
+  recipient String
+  subject   String
+  body      String
+  sent      Boolean   @default(false)
+  sentAt    DateTime?
+  error     String?
+  createdAt DateTime  @default(now())
+
+  @@index([recipient])
+  @@index([sent])
+  @@map("notifications")
+}
+
+enum ProposalStatus {
+  PENDING
+  ACTIVE
+  CANCELED
+  DEFEATED
+  SUCCEEDED
+  QUEUED
+  EXPIRED
+  EXECUTED
+}
