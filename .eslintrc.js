@@ -121,10 +121,9 @@ module.exports = {
         '@typescript-eslint/no-unsafe-member-access': 'off',
       },
     },
-    /* Next.js apps */
+    /* Next.js apps — app-level .eslintrc extends next/core-web-vitals */
     {
       files: ['apps/web/**/*.ts', 'apps/web/**/*.tsx'],
-      extends: ['next/core-web-vitals'],
       rules: {
         'unicorn/prefer-module': 'off',
       },

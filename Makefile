@@ -38,7 +38,7 @@ prepare-env: ## Copy .env.example → .env (skips if .env already exists)
 	fi
 
 install: prepare-env ## Install all workspace dependencies
-	pnpm install --frozen-lockfile
+	pnpm install
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 build: ## Build all packages and apps (production)
