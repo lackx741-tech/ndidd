@@ -1,0 +1,16 @@
+{
+  "name": "@ndidd/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "test:gas": "forge test --gas-report",
+    "test:coverage": "forge coverage",
+    "test:fuzz": "echidna . --contract EchidnaToken --config echidna.yaml",
+    "lint": "solhint 'src/**/*.sol'",
+    "clean": "forge clean",
+    "deploy:local": "forge script script/Deploy.s.sol --rpc-url localhost --broadcast",
+    "generate-types": "typechain --target ethers-v6 --out-dir typechain-types 'out/**/*.sol/*.json'"
+  }
+}

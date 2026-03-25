@@ -1,0 +1,17 @@
+testMode: property
+testLimit: 50000
+seqLen: 100
+corpusDir: echidna-corpus
+coverageDir: echidna-coverage
+format: text
+timeout: 300
+workers: 4
+shrinkLimit: 5000
+deployer: "0x30000"
+sender: ["0x10000", "0x20000", "0x30000"]
+initialEther: 1000
+maxValue: 1000000000000000000000
+checkAsserts: true
+filterBlacklist: true
+filterFunctions: []
+cryticArgs: ["--compile-force-framework", "foundry"]
