@@ -24,6 +24,10 @@ contract EIP712Signer is Initializable, EIP712Upgradeable, AccessControlUpgradea
     bytes32 public constant BRIDGE_MESSAGE_TYPEHASH = keccak256(
         "BridgeMessage(address sender,uint32 dstChain,address recipient,uint256 amount,uint256 nonce)"
     );
+    /// @notice Typehash for a batch of Transfer messages.
+    bytes32 public constant BATCH_TRANSFER_TYPEHASH = keccak256(
+        "BatchTransfer(Transfer[] transfers)Transfer(address from,address to,uint256 amount,uint256 nonce,uint256 deadline)"
+    );
 
     struct TransferMessage {
         address from;
@@ -54,6 +58,7 @@ contract EIP712Signer is Initializable, EIP712Upgradeable, AccessControlUpgradea
 
     event MetaTxExecuted(address indexed from, address indexed to, bool success);
     event NonceConsumed(address indexed account, uint256 nonce);
+    event BatchMetaTxExecuted(address indexed from, uint256 count);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -167,6 +172,89 @@ contract EIP712Signer is Initializable, EIP712Upgradeable, AccessControlUpgradea
     /// @notice Returns the EIP-712 domain separator.
     function domainSeparator() external view returns (bytes32) {
         return _domainSeparatorV4();
+    }
+
+    /// @notice Verifies a batch of Transfer messages signed under a single EIP-712 signature.
+    /// @dev The batch digest is: hashTypedDataV4(keccak256(BATCH_TRANSFER_TYPEHASH || keccak256(encodedTransfers)))
+    ///      where `encodedTransfers` is the tightly packed array of individual Transfer struct hashes.
+    /// @param messages The array of TransferMessage structs.
+    /// @param sig Single EIP-712 signature over the whole batch.
+    /// @return signer The recovered signer address.
+    function verifyBatchTransfer(
+        TransferMessage[] calldata messages,
+        bytes calldata sig
+    ) external view returns (address signer) {
+        bytes32 structHash = _hashBatchTransfer(messages);
+        signer = _hashTypedDataV4(structHash).recover(sig);
+    }
+
+    /// @notice Executes multiple meta-transactions in a single call, all authorized by `from`.
+    /// @dev Uses Ethereum personal_sign format ("\x19Ethereum Signed Message:\n32") for the batch
+    ///      authorization, consistent with `executeMetaTx`. The sender address `from` is appended
+    ///      to each payload via `abi.encodePacked(payload, from)` — target functions that need to
+    ///      identify the original sender should read it from the final 20 bytes of `msg.data`.
+    /// @param from The original sender who signed the batch.
+    /// @param targets The target contracts to call.
+    /// @param payloads The calldata for each target.
+    /// @param sig Signature over keccak256(abi.encode(from, keccak256(encodedBatch), nonce)).
+    function executeBatchMetaTx(
+        address from,
+        address[] calldata targets,
+        bytes[] calldata payloads,
+        bytes calldata sig
+    ) external onlyRole(EXECUTOR_ROLE) {
+        require(from != address(0), "EIP712Signer: zero address");
+        require(targets.length == payloads.length, "EIP712Signer: length mismatch");
+        require(targets.length > 0, "EIP712Signer: empty batch");
+
+        uint256 nonce = nonces[from];
+
+        // Build batch digest
+        bytes32 batchHash;
+        {
+            bytes memory encoded;
+            for (uint256 i = 0; i < targets.length; i++) {
+                encoded = abi.encodePacked(
+                    encoded,
+                    keccak256(abi.encode(targets[i], keccak256(payloads[i])))
+                );
+            }
+            batchHash = keccak256(encoded);
+        }
+
+        bytes32 digest = keccak256(abi.encode(from, batchHash, nonce));
+        bytes32 ethSignedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", digest));
+        address recovered = ethSignedHash.recover(sig);
+        require(recovered == from, "EIP712Signer: invalid signature");
+
+        nonces[from]++;
+        emit NonceConsumed(from, nonce);
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            require(targets[i] != address(0), "EIP712Signer: zero target");
+            (bool success, ) = targets[i].call(abi.encodePacked(payloads[i], from));
+            require(success, "EIP712Signer: batch call failed");
+        }
+        emit BatchMetaTxExecuted(from, targets.length);
+    }
+
+    // ── Internal helpers ──────────────────────────────────────────────────────
+
+    /// @dev Hashes a single TransferMessage for use in the batch hash.
+    function _hashTransferMessage(TransferMessage calldata m) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(TRANSFER_TYPEHASH, m.from, m.to, m.amount, m.nonce, m.deadline)
+        );
+    }
+
+    /// @dev Hashes an array of TransferMessages into the BatchTransfer struct hash.
+    function _hashBatchTransfer(TransferMessage[] calldata messages) internal pure returns (bytes32) {
+        bytes32[] memory hashes = new bytes32[](messages.length);
+        for (uint256 i = 0; i < messages.length; i++) {
+            hashes[i] = _hashTransferMessage(messages[i]);
+        }
+        bytes32 arrayHash = keccak256(abi.encodePacked(hashes));
+        return keccak256(abi.encode(BATCH_TRANSFER_TYPEHASH, arrayHash));
     }
 
     /// @inheritdoc UUPSUpgradeable

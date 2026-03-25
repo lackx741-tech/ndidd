@@ -67,6 +67,24 @@ contract NdiddToken is
         _unpause();
     }
 
+    /// @notice Delegates voting power for multiple accounts in a single transaction via EIP-712 sigs.
+    /// @dev Each entry mirrors the `delegateBySig` parameters. Reverts on any invalid signature.
+    struct DelegateSig {
+        address delegatee;
+        uint256 nonce;
+        uint256 expiry;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
+    function delegateBatch(DelegateSig[] calldata sigs) external {
+        for (uint256 i = 0; i < sigs.length; i++) {
+            DelegateSig calldata d = sigs[i];
+            delegateBySig(d.delegatee, d.nonce, d.expiry, d.v, d.r, d.s);
+        }
+    }
+
     /// @inheritdoc UUPSUpgradeable
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 

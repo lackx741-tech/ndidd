@@ -20,6 +20,7 @@ export {
   AccountFactoryABI,
   SmartAccountABI,
   NdiddPaymasterABI,
+  EIP712SignerABI,
 } from './abis/index.js'
 
 // Types
@@ -48,9 +49,13 @@ export {
   deploySmartWallet,
   signTransfer,
   signPermit,
+  signBatchTransfer,
+  signDelegateBySig,
+  sendUserOp,
+  estimateUserOpGas,
   hashDescription,
 } from './wallet/index.js'
-export type { SmartWalletOptions } from './wallet/index.js'
+export type { SmartWalletOptions, BatchTransferMessage, UserOpRequest } from './wallet/index.js'
 
 // Utilities
 export {
