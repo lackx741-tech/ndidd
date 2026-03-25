@@ -129,6 +129,10 @@ const PERMIT_TYPE = [
 
 /**
  * Sign an ERC-2612 permit and return split (v, r, s) signature components.
+ *
+ * @param tokenName - Must match the token contract's EIP-712 domain name
+ *   (usually the token's `name()` return value). Passing the wrong name will
+ *   produce an invalid signature that the contract will reject.
  */
 export async function signPermit(
   walletClient: WalletClient,
@@ -138,6 +142,7 @@ export async function signPermit(
   deadline: bigint,
   chainId: number,
   nonce: bigint = 0n,
+  tokenName = 'Token',
 ): Promise<{ v: number; r: `0x${string}`; s: `0x${string}` }> {
   const [account] = await walletClient.getAddresses()
   if (!account) throw new Error('No account available in WalletClient')
@@ -145,7 +150,7 @@ export async function signPermit(
   const signature = await walletClient.signTypedData({
     account,
     domain: {
-      name: 'Permit',
+      name: tokenName,
       version: '1',
       chainId,
       verifyingContract: tokenAddress,

@@ -18,6 +18,10 @@ export function parseTokenAmount(amount: string, decimals: number): bigint {
 /**
  * Add a percentage buffer on top of an estimated gas value.
  * Defaults to 20 % buffer.
+ *
+ * Note: uses integer division, so the result is truncated (rounded down).
+ * This is intentionally conservative — callers that require a strict upper
+ * bound should round up themselves.
  */
 export function calculateGasWithBuffer(gas: bigint, bufferPercent = 20): bigint {
   return (gas * BigInt(100 + bufferPercent)) / 100n
