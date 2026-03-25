@@ -10,6 +10,8 @@ import {NdiddNFT} from "../src/nft/NdiddNFT.sol";
 import {NdiddVault} from "../src/vault/NdiddVault.sol";
 import {NdiddGovernor} from "../src/governance/NdiddGovernor.sol";
 import {NdiddTimelock} from "../src/governance/NdiddTimelock.sol";
+import {AccountFactory, IEntryPoint} from "../src/aa/AccountFactory.sol";
+import {NdiddPaymaster, IEntryPointPaymaster} from "../src/aa/NdiddPaymaster.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {TimelockControllerUpgradeable} from "@openzeppelin/contracts-upgradeable/governance/TimelockControllerUpgradeable.sol";
@@ -28,6 +30,8 @@ contract Deploy is Script {
     address public timelockProxy;
     address public governorImpl;
     address public governorProxy;
+    address public accountFactory;
+    address public paymaster;
 
     function run() external {
         address deployer = _deployer();
@@ -107,6 +111,27 @@ contract Deploy is Script {
         // ── 6. Wire up roles ──────────────────────────────────────────────────
         _setupGovernanceRoles(deployer);
 
+        // ── 7. AccountFactory (ERC-4337) ──────────────────────────────────────
+        // ERC-4337 canonical EntryPoint v0.6 — update to v0.7 when available on target chain.
+        address entryPointAddr = vm.envOr("ENTRY_POINT_ADDRESS", 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789);
+        accountFactory = address(new AccountFactory(IEntryPoint(entryPointAddr)));
+        console.log("AccountFactory  :", accountFactory);
+
+        // ── 8. NdiddPaymaster ─────────────────────────────────────────────────
+        // Signer can be a separate hot wallet managed by the backend.
+        address paymasterSigner = vm.envOr("PAYMASTER_SIGNER", deployer);
+        uint256 minBalance = vm.envOr("PAYMASTER_MIN_TOKEN_BALANCE", uint256(0));
+        paymaster = address(
+            new NdiddPaymaster(
+                IEntryPointPaymaster(entryPointAddr),
+                deployer,          // admin
+                paymasterSigner,   // signer (SIGNER_ROLE)
+                tokenProxy,        // NDIDD token for optional balance gate
+                minBalance
+            )
+        );
+        console.log("NdiddPaymaster  :", paymaster);
+
         vm.stopBroadcast();
 
         _logSummary();
@@ -140,7 +165,9 @@ contract Deploy is Script {
         console.log("NdiddNFT    :", nftProxy);
         console.log("NdiddVault  :", vaultProxy);
         console.log("NdiddTimelock:", timelockProxy);
-        console.log("NdiddGovernor:", governorProxy);
+        console.log("NdiddGovernor :", governorProxy);
+        console.log("AccountFactory :", accountFactory);
+        console.log("NdiddPaymaster :", paymaster);
         console.log("==========================\n");
     }
 

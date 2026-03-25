@@ -8,6 +8,8 @@ export { NdiddNFTClient } from './contracts/nft.js'
 export { NdiddVaultClient } from './contracts/vault.js'
 export { NdiddGovernorClient, VoteSupport } from './contracts/governance.js'
 export type { VoteSupportValue } from './contracts/governance.js'
+export { SmartAccountClient } from './contracts/account.js'
+export type { UserOperation } from './contracts/account.js'
 
 // ABIs
 export {
@@ -15,6 +17,9 @@ export {
   NdiddNFTABI,
   NdiddVaultABI,
   NdiddGovernorABI,
+  AccountFactoryABI,
+  SmartAccountABI,
+  NdiddPaymasterABI,
 } from './abis/index.js'
 
 // Types
