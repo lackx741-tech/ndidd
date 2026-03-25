@@ -1,0 +1,130 @@
+# ============================================================
+# Dependencies
+# ============================================================
+node_modules/
+.pnpm-store/
+.yarn/
+.npm/
+
+# ============================================================
+# Build outputs
+# ============================================================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+storybook-static/
+*.tsbuildinfo
+
+# ============================================================
+# Turbo
+# ============================================================
+.turbo/
+
+# ============================================================
+# Solidity / Hardhat / Foundry
+# ============================================================
+artifacts/
+cache/
+typechain-types/
+deployments/
+broadcast/
+# Foundry
+out/
+cache_forge/
+
+# ============================================================
+# The Graph
+# ============================================================
+subgraph/generated/
+subgraph/build/
+
+# ============================================================
+# Environment variables
+# ============================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+.env.production
+# Keep the example file
+!.env.example
+
+# ============================================================
+# Coverage & test results
+# ============================================================
+coverage/
+lcov.info
+*.lcov
+test-results/
+playwright-report/
+.nyc_output/
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================================
+# OS artifacts
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ============================================================
+# IDE & editor
+# ============================================================
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*.vim
+.editorconfig
+
+# ============================================================
+# Docker
+# ============================================================
+.dockerignore
+
+# ============================================================
+# Vercel / Netlify / hosting
+# ============================================================
+.vercel/
+.netlify/
+
+# ============================================================
+# Miscellaneous
+# ============================================================
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.jks
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tgz
+*.tar.gz
+*.zip

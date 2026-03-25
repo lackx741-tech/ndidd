@@ -1,0 +1,53 @@
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.vercel/
+
+# Solidity artifacts
+artifacts/
+cache/
+typechain-types/
+deployments/
+
+# The Graph
+subgraph/generated/
+subgraph/build/
+
+# Coverage
+coverage/
+lcov.info
+*.lcov
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Turbo
+.turbo/
+
+# Lock files (format checked separately)
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Auto-generated
+*.d.ts.map
+*.js.map
+*.tsbuildinfo

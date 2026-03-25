@@ -1,0 +1,91 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".env",
+    ".env.local",
+    "tsconfig.json"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "CI",
+    "VERCEL_ENV",
+    "NEXT_PUBLIC_*"
+  ],
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "build/**",
+        "out/**",
+        "artifacts/**",
+        "typechain-types/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "NEXT_PUBLIC_CHAIN_ID",
+        "NEXT_PUBLIC_RPC_URL",
+        "NEXT_PUBLIC_CONTRACT_ADDRESS",
+        "NEXT_PUBLIC_SUBGRAPH_URL",
+        "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID"
+      ]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "NODE_ENV",
+        "PORT",
+        "DATABASE_URL",
+        "REDIS_URL",
+        "NEXT_PUBLIC_*"
+      ]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "coverage/**",
+        "test-results/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "REDIS_URL"
+      ]
+    },
+    "test:ci": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "coverage/**",
+        "test-results/**"
+      ]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "lint:fix": {
+      "cache": false,
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "format": {
+      "cache": false,
+      "outputs": []
+    },
+    "clean": {
+      "cache": false,
+      "outputs": []
+    },
+    "deploy": {
+      "dependsOn": ["build", "typecheck", "lint"],
+      "outputs": [],
+      "cache": false
+    }
+  }
+}
